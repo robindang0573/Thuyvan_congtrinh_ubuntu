@@ -208,7 +208,7 @@ def statistics():
         buf.seek(0)
         chart_data = base64.b64encode(buf.getvalue()).decode('utf-8')
     
-    return render_template('statistics.html', stats=stats, chart_data=chart_data, subjects=subjects, selected_subject_id=subject_id)
+    return render_template('Statistics.html', stats=stats, chart_data=chart_data, subjects=subjects, selected_subject_id=subject_id)
 
 @main_bp.route('/import', methods=['GET', 'POST'])
 @login_required

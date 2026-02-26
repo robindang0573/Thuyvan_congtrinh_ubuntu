@@ -14,7 +14,7 @@ def create_app():
     
     # Configuration
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
-    app.config['MONGO_URI'] = os.environ.get('MONGO_URI', 'mongodb://robin:123456789@baonamdts.com:22112/thuyvan_db')
+    app.config['MONGO_URI'] = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/thuyvan_db')
     app.config['UPLOAD_FOLDER'] = 'uploads'
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
     

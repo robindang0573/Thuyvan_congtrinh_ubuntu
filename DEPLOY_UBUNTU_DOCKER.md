@@ -29,12 +29,26 @@ cd thuyvan_congtrinh_ubuntu
 ```bash
 cat > .env << 'EOF'
 SECRET_KEY=thay-secret-key-rat-manh-tai-day
+MONGO_ROOT_USERNAME=admin
+MONGO_ROOT_PASSWORD=thay-mat-khau-rat-manh-tai-day
+MONGO_DB_NAME=thuyvan_db
 EOF
 ```
 
 ## 4. Build va chay
 ```bash
 docker compose up -d --build
+```
+
+## 4.1 Chay voi MongoDB Remote (du lieu cu)
+Cap nhat file `.env`:
+```bash
+MONGO_URI=mongodb://user:password@remote-host:27017/thuyvan_db?authSource=admin
+```
+
+Chay web app voi file compose remote:
+```bash
+docker compose -f docker-compose.remote.yml up -d --build
 ```
 
 ## 5. Kiem tra
@@ -52,6 +66,9 @@ docker compose down
 # Cap nhat phien ban moi
 git pull
 docker compose up -d --build
+
+# Neu dang dung MongoDB remote
+docker compose -f docker-compose.remote.yml up -d --build
 ```
 
 ## 7. Mo cong firewall (neu dung UFW)
@@ -59,4 +76,3 @@ docker compose up -d --build
 sudo ufw allow 5000/tcp
 sudo ufw reload
 ```
-

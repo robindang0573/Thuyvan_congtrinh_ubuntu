@@ -5,20 +5,26 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - MONGO_URI=mongodb://admin:password123@mongodb:27017/thuyvan_db?authSource=admin
-      - SECRET_KEY=${SECRET_KEY:-change-this-secret-in-production}
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB_NAME}?authSource=admin
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     volumes:
       - ./uploads:/app/uploads
 
   mongodb:
-    image: mongo:7
+    image: mongo:4.4
     restart: unless-stopped
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password123
-      - MONGO_INITDB_DATABASE=thuyvan_db
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_DB_NAME}
+    healthcheck:
+      test: ["CMD", "mongo", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - mongodb_data:/data/db
       - ./mongodb-int:/docker-entrypoint-initdb.d
