@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Quản Lý Câu Hỏi - Ôn Thi Thủy Văn{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-danger text-white">
+        <div class="row align-items-center mb-4">
+            <div class="col-md-6">
+                <h2><i class="bi bi-list-check"></i> Quản Lý Câu Hỏi</h2>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="d-inline-block me-2">
+                    <select class="form-select" id="subjectFilter" onchange="filterContext()">
+                        <option value="">-- Tất cả môn học --</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject._id }}" {% if selected_subject_id==(subject._id|string) %}selected{%
+                            endif %}>{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <a href="{{ url_for('main.import_questions') }}" class="btn btn-primary">
+                    <i class="bi bi-cloud-upload"></i> Import Câu Hỏi
+                </a>
+            </div>
+        </div>
+
+        <script>
+            function filterContext() {
+                const subjectId = document.getElementById('subjectFilter').value;
+                if (subjectId) {
+                    window.location.href = `{{ url_for('main.manage_questions') }}?subject_id=${subjectId}`;
+                } else {
+                    window.location.href = `{{ url_for('main.manage_questions') }}`;
+                }
+            }
+        </script>
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-gear"></i> Quản Lý Câu Hỏi</h4>
+            <div>
+                <button class="btn btn-light btn-sm me-2" onclick="addQuestion()">
+                    <i class="bi bi-plus-circle"></i> Thêm câu hỏi mới
+                </button>
+                <a href="{{ url_for('main.import_questions') }}" class="btn btn-light btn-sm">
+                    <i class="bi bi-arrow-left"></i> Quay lại Import
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Cảnh báo:</strong> Đây là trang quản trị. Chỉ xóa câu hỏi khi thực sự cần thiết.
+        </div>
+
+        <div class="mb-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Lọc theo danh mục:</h5>
+                    <select class="form-select" id="categoryFilter" onchange="filterQuestions()">
+                        <option value="">Tất cả danh mục</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <h5>Tìm kiếm:</h5>
+                    <input type="text" class="form-control" id="searchBox" placeholder="Tìm kiếm câu hỏi..."
+                        onkeyup="searchQuestions()">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover question-management-table" id="questionsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 5%">#</th>
+                        <th style="width: 40%">Câu hỏi</th>
+                        <th style="width: 15%">Môn học</th>
+                        <th style="width: 15%">Danh mục</th>
+                        <th style="width: 10%">Độ khó</th>
+                        <th style="width: 15%">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for question in questions %}
+                    <tr class="question-row" data-category="{{ question.category }}">
+                        <td>{{ loop.index }}</td>
+                        <td class="question-content-cell">
+                            <strong class="question-text">{{ question.question }}</strong>
+                            <div class="mt-2">
+                                {% for key, value in question.options.items() %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" disabled {% if
+                                        key==question.correct_answer %}checked{% endif %}>
+                                    <label class="form-check-label option-text">
+                                        <strong>{{ key }})</strong> {{ value }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td><small>{{ question.subject_name }}</small></td>
+                        <td><span class="badge bg-secondary">{{ question.category }}</span></td>
+                        <td>
+                            <span
+                                class="badge bg-{{ 'success' if question.difficulty == 'easy' else 'warning' if question.difficulty == 'medium' else 'danger' }}">
+                                {{ question.difficulty }}
+                            </span>
+                        </td>
+                        <td class="question-actions">
+                            <button class="btn btn-sm btn-primary me-1"
+                                onclick='editQuestion({{ question.json_data|tojson|safe }})'>
+                                <i class="bi bi-pencil"></i> Sửa
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteQuestion('{{ question._id }}')">
+                                <i class="bi bi-trash"></i> Xóa
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-3">
+            <p class="text-muted">Tổng số: {{ questions|length }} câu hỏi</p>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Question Modal -->
+<div class="modal fade" id="editQuestionModal" tabindex="-1" aria-labelledby="editQuestionModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editQuestionModalLabel"><i class="bi bi-pencil-square"></i> Chỉnh Sửa Câu
+                    Hỏi</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editQuestionForm">
+                    <input type="hidden" id="editQuestionId">
+                    <div class="mb-3">
+                        <label for="editQuestionText" class="form-label font-weight-bold">Câu hỏi:</label>
+                        <textarea class="form-control" id="editQuestionText" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Đáp án a:</label>
+                            <input type="text" class="form-control" id="editOptionA" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Đáp án b:</label>
+                            <input type="text" class="form-control" id="editOptionB" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Đáp án c:</label>
+                            <input type="text" class="form-control" id="editOptionC" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Đáp án d:</label>
+                            <input type="text" class="form-control" id="editOptionD" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editCorrectAnswer" class="form-label">Đáp án đúng:</label>
+                            <select class="form-select" id="editCorrectAnswer" required>
+                                <option value="a">a</option>
+                                <option value="b">b</option>
+                                <option value="c">c</option>
+                                <option value="d">d</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editSubject" class="form-label">Môn học:</label>
+                            <select class="form-select" id="editSubject">
+                                <option value="">-- Chọn môn học --</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject._id }}">{{ subject.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editCategory" class="form-label">Danh mục:</label>
+                            <input type="text" class="form-control" id="editCategory" list="categoryOptions"
+                                placeholder="Nhập hoặc chọn danh mục">
+                            <datalist id="categoryOptions">
+                                {% for category in categories %}
+                                <option value="{{ category }}">
+                                    {% endfor %}
+                            </datalist>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editDifficulty" class="form-label">Độ khó:</label>
+                            <select class="form-select" id="editDifficulty">
+                                <option value="easy">Easy</option>
+                                <option value="medium">Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="saveQuestion()">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let editModal;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        editModal = new bootstrap.Modal(document.getElementById('editQuestionModal'));
+    });
+
+    function addQuestion() {
+        document.getElementById('editQuestionModalLabel').innerHTML = '<i class="bi bi-plus-circle"></i> Thêm Câu Hỏi Mới';
+        document.getElementById('editQuestionId').value = '';
+        document.getElementById('editQuestionText').value = '';
+        document.getElementById('editOptionA').value = '';
+        document.getElementById('editOptionB').value = '';
+        document.getElementById('editOptionC').value = '';
+        document.getElementById('editOptionD').value = '';
+        document.getElementById('editCorrectAnswer').value = 'a';
+        document.getElementById('editCategory').value = 'Thủy văn công trình';
+        document.getElementById('editDifficulty').value = 'medium';
+
+        editModal.show();
+    }
+
+    function editQuestion(data) {
+        document.getElementById('editQuestionModalLabel').innerHTML = '<i class="bi bi-pencil-square"></i> Chỉnh Sửa Câu Hỏi';
+        document.getElementById('editQuestionId').value = data._id.$oid || data._id;
+        document.getElementById('editQuestionText').value = data.question;
+        document.getElementById('editOptionA').value = data.options.a || '';
+        document.getElementById('editOptionB').value = data.options.b || '';
+        document.getElementById('editOptionC').value = data.options.c || '';
+        document.getElementById('editOptionD').value = data.options.d || '';
+        document.getElementById('editCorrectAnswer').value = data.correct_answer;
+        document.getElementById('editCategory').value = data.category || 'Thủy văn công trình';
+        document.getElementById('editDifficulty').value = data.difficulty || 'medium';
+
+        // Set subject
+        if (data.subject_id) {
+            document.getElementById('editSubject').value = data.subject_id;
+        } else {
+            document.getElementById('editSubject').value = "";
+        }
+
+        editModal.show();
+    }
+
+    function saveQuestion() {
+        const questionId = document.getElementById('editQuestionId').value;
+        const method = questionId ? 'PUT' : 'POST';
+        const url = questionId ? `/api/questions/${questionId}` : '/api/questions';
+
+        const questionData = {
+            question: document.getElementById('editQuestionText').value,
+            options: {
+                a: document.getElementById('editOptionA').value,
+                b: document.getElementById('editOptionB').value,
+                c: document.getElementById('editOptionC').value,
+                d: document.getElementById('editOptionD').value
+            },
+            correct_answer: document.getElementById('editCorrectAnswer').value,
+            category: document.getElementById('editCategory').value,
+            difficulty: document.getElementById('editDifficulty').value,
+            subject_id: document.getElementById('editSubject').value
+        };
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Cập nhật câu hỏi thành công!');
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + (data.error || 'Không thể cập nhật câu hỏi'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi cập nhật câu hỏi');
+            });
+    }
+
+    function deleteQuestion(questionId) {
+        if (confirm('Bạn có chắc chắn muốn xóa câu hỏi này? Hành động này không thể hoàn tác.')) {
+            fetch(`/api/questions/${questionId}`, {
+                method: 'DELETE',
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Đã xóa câu hỏi thành công!');
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + (data.error || 'Không thể xóa câu hỏi'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi xóa câu hỏi');
+                });
+        }
+    }
+
+    function filterQuestions() {
+        const category = document.getElementById('categoryFilter').value;
+        const rows = document.querySelectorAll('#questionsTable tbody tr');
+
+        rows.forEach(row => {
+            if (!category || row.dataset.category === category) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function searchQuestions() {
+        const searchText = document.getElementById('searchBox').value.toLowerCase();
+        const rows = document.querySelectorAll('#questionsTable tbody tr');
+
+        rows.forEach(row => {
+            const questionText = row.cells[1].textContent.toLowerCase();
+            if (questionText.includes(searchText)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

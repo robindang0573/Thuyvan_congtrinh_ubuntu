@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+.env
+uploads/
+mongodb-int/
+data/
+.vscode/
+.idea/
+*.docx
+!Thuyvan_congtrinh/app/static/

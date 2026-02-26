@@ -1,0 +1,27 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://admin:password123@mongodb:27017/thuyvan_db?authSource=admin
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-in-production}
+    depends_on:
+      - mongodb
+    volumes:
+      - ./uploads:/app/uploads
+
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_DATABASE=thuyvan_db
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongodb-int:/docker-entrypoint-initdb.d
+
+volumes:
+  mongodb_data:

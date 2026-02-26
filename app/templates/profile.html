@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Hồ Sơ - Ôn Thi Thủy Văn{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="bi bi-person-circle"></i> Hồ Sơ Cá Nhân</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="bi bi-person-circle" style="font-size: 5rem; color: #6c757d;"></i>
+                        </div>
+                        <h3>{{ user.username }}</h3>
+                        <p class="text-muted">{{ user.email }}</p>
+                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'info' }}">
+                            {{ 'Quản trị viên' if user.role == 'admin' else 'Người dùng' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Thông tin tài khoản</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Tên đăng nhập:</strong>
+                                <p>{{ user.username }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Email:</strong>
+                                <p>{{ user.email }}</p>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Vai trò:</strong>
+                                <p>{{ 'Quản trị viên' if user.role == 'admin' else 'Người dùng' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Ngày tham gia:</strong>
+                                <p>{{ user_data.created_at.strftime('%d/%m/%Y') if user_data.created_at else 'N/A' }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if stats %}
+                        <hr>
+                        <h5 class="mb-3">Thống kê học tập</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Số lần thi</h6>
+                                        <h2 class="text-primary">{{ stats.total_exams }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Điểm trung bình</h6>
+                                        <h2 class="text-success">{{ "%.1f"|format(stats.average_score) }}%</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Hướng dẫn sử dụng</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="bi bi-pencil-square text-primary" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Thi thử</h6>
+                                <p class="text-muted small">Làm bài thi 20 câu ngẫu nhiên</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="bi bi-bar-chart text-success" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Theo dõi tiến độ</h6>
+                                <p class="text-muted small">Xem thống kê và biểu đồ tiến bộ</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="bi bi-arrow-repeat text-warning" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">Ôn tập lại</h6>
+                                <p class="text-muted small">Xem lại các câu đã làm sai</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

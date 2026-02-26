@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Kết Quả - Ôn Thi Thủy Văn{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-info text-white">
+        <div class="row align-items-center mb-4">
+            <div class="col-md-6">
+                <h2><i class="bi bi-list-check"></i> Lịch Sử Thi</h2>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="d-inline-block">
+                    <select class="form-select" id="subjectFilter" onchange="filterResults()">
+                        <option value="">-- Tất cả môn học --</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject._id }}" {% if selected_subject_id==(subject._id|string) %}selected{%
+                            endif %}>{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function filterResults() {
+            const subjectId = document.getElementById('subjectFilter').value;
+            if (subjectId) {
+                window.location.href = `{{ url_for('main.results') }}?subject_id=${subjectId}`;
+            } else {
+                window.location.href = `{{ url_for('main.results') }}`;
+            }
+        }
+    </script>
+
+    <div class="card-body">
+        {% if results %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Ngày thi</th>
+                        <th>Môn thi</th>
+                        <th>Điểm số</th>
+                        <th>Thời gian</th>
+                        <th>Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>{{ result.completed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ result.subject_name }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if result.percentage >= 50 else 'danger' }}">
+                                {{ "%.1f"|format(result.percentage) }}%
+                            </span>
+                        </td>
+                        {% if result.total_questions > 0 %}
+                        {{ (result.score / result.total_questions * 100)|round(1) }}%
+                        {% else %}
+                        0%
+                        {% endif %}
+                        </td>
+                        <td>{{ (result.duration_seconds // 60)|int }}:{{ "%02d"|format(result.duration_seconds % 60) }}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('main.result_detail', result_id=result._id) }}"
+                                class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Xem chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-clipboard-x text-muted" style="font-size: 4rem;"></i>
+            <h4 class="mt-3 text-muted">Chưa có kết quả nào</h4>
+            <p class="text-muted">Hãy tham gia bài thi đầu tiên để xem kết quả tại đây!</p>
+            <a href="{{ url_for('main.exam') }}" class="btn btn-primary btn-lg mt-3">
+                <i class="bi bi-pencil-square"></i> Bắt đầu thi thử
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

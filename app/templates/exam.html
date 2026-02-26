@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Thi Thử - Ôn Thi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #007bff;
+    }
+
+    .option-item {
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .option-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .option-item.selected {
+        background-color: #e3f2fd;
+        border: 2px solid #2196f3;
+    }
+
+    .option-item input[type="radio"] {
+        display: none;
+    }
+
+    #timer {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-warning text-dark">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-0">
+                    <i class="bi bi-pencil-square"></i> Thi Thử: {{ subject_name }}
+                </h2>
+            </div>
+            <div class="col-md-4 text-end">
+                <h3 id="timer" class="text-danger fw-bold">
+                    <i class="bi bi-alarm"></i> <span id="timeDisplay">{{ "%02d"|format(time_limit) }}:00</span>
+                </h3>
+                <span class="ms-2 fs-5" id="question-counter">1/{{ questions|length }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Hướng dẫn:</strong> Bài thi gồm {{ questions|length }} câu, thời gian {{ time_limit }} phút.
+            Chọn đáp án và nhấn "Nộp bài" khi hoàn thành.
+        </div>
+
+        <div id="exam-container">
+            <form id="exam-form">
+                {% for question in questions %}
+                <div class="question-card" id="question-{{ loop.index }}" {% if loop.index> 1 %}style="display:none;"{%
+                    endif %}>
+                    <h5 class="text-primary">Câu {{ loop.index }}:</h5>
+                    <p class="fs-5">{{ question.question }}</p>
+                    <div class="options mt-4">
+                        {% for key, value in question.options.items() %}
+                        <div class="option-item" onclick="selectOption(this, 'q{{ question._id }}', '{{ key }}')">
+                            <input type="radio" name="question_{{ question._id }}" id="q{{ question._id }}_{{ key }}"
+                                value="{{ key }}">
+                            <label class="form-check-label w-100" for="q{{ question._id }}_{{ key }}">
+                                <strong class="fs-5">{{ key.upper() }})</strong> {{ value }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="button" class="btn btn-secondary" id="prev-btn" disabled onclick="prevQuestion()">
+                        <i class="bi bi-arrow-left"></i> Câu trước
+                    </button>
+                    <button type="button" class="btn btn-primary" id="next-btn" onclick="nextQuestion()">
+                        Câu tiếp theo <i class="bi bi-arrow-right"></i>
+                    </button>
+                    <button type="button" class="btn btn-success" id="submit-btn" style="display:none;"
+                        onclick="submitExam()">
+                        <i class="bi bi-send-check"></i> Nộp bài
+                    </button>
+                </div>
+
+                <div class="mt-4">
+                    <div class="progress">
+                        <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 5%"></div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small>Tiến độ: <span id="progress-text">1/{{ questions|length }}</span></small>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="result-container" style="display:none;">
+            <div class="text-center py-5">
+                <div class="result-circle mx-auto">
+                    <div class="circle-bg">
+                        <h1 id="final-score" class="display-1 mb-0">0</h1>
+                        <h4>điểm</h4>
+                    </div>
+                </div>
+                <h3 class="text-success mt-4">Hoàn thành bài thi!</h3>
+                <div class="mt-3">
+                    <h5>Kết quả: <span id="final-percentage" class="text-primary">0%</span></h5>
+                    <p class="text-muted">Thời gian: <span id="final-time">0:00</span> phút</p>
+                </div>
+                <div class="mt-5">
+                    <a href="{{ url_for('main.exam') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-arrow-repeat"></i> Thi lại
+                    </a>
+                    <a href="{{ url_for('main.results') }}" class="btn btn-info btn-lg">
+                        <i class="bi bi-list-check"></i> Xem chi tiết
+                    </a>
+                    <a href="{{ url_for('main.index') }}" class="btn btn-secondary btn-lg">
+                        <i class="bi bi-house-door"></i> Về trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentQuestion = 1;
+    const totalQuestions = {{ questions| length }};
+    const timeLimitMinutes = {{ time_limit }};
+    let timeLeft = timeLimitMinutes * 60;
+    let timerInterval;
+    let selectedAnswers = {};
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimer();
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                submitExam();
+            }
+        }, 1000);
+    }
+
+    function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timer').textContent =
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function selectOption(element, questionId, optionKey) {
+        // Remove selected class from all options in this question
+        const questionElement = element.closest('.question-card');
+        questionElement.querySelectorAll('.option-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+
+        // Add selected class to clicked option
+        element.classList.add('selected');
+
+        // Update the radio button
+        const radioButton = document.getElementById(`${questionId}_${optionKey}`);
+        radioButton.checked = true;
+
+        // Save answer
+        const qid = questionId.replace('q', '');
+        selectedAnswers[qid] = optionKey;
+
+        // Update progress
+        updateProgress();
+    }
+
+    function showQuestion(index) {
+        document.querySelectorAll('.question-card').forEach(card => {
+            card.style.display = 'none';
+        });
+        document.getElementById(`question-${index}`).style.display = 'block';
+        document.getElementById('question-counter').textContent = `${index}/${totalQuestions}`;
+
+        // Update buttons
+        document.getElementById('prev-btn').disabled = (index === 1);
+        document.getElementById('next-btn').style.display = (index === totalQuestions) ? 'none' : 'inline-block';
+        document.getElementById('submit-btn').style.display = (index === totalQuestions) ? 'inline-block' : 'none';
+
+        // Restore selected option if exists
+        const questionElement = document.getElementById(`question-${index}`);
+        const radioButtons = questionElement.querySelectorAll('input[type="radio"]');
+        radioButtons.forEach(radio => {
+            const qid = radio.name.replace('question_', '');
+            if (selectedAnswers[qid] === radio.value) {
+                radio.checked = true;
+                radio.closest('.option-item').classList.add('selected');
+            }
+        });
+    }
+
+    function prevQuestion() {
+        if (currentQuestion > 1) {
+            currentQuestion--;
+            showQuestion(currentQuestion);
+        }
+    }
+
+    function nextQuestion() {
+        if (currentQuestion < totalQuestions) {
+            currentQuestion++;
+            showQuestion(currentQuestion);
+        }
+    }
+
+    function updateProgress() {
+        const answered = Object.keys(selectedAnswers).length;
+        const percentage = (answered / totalQuestions) * 100;
+        document.getElementById('progress-bar').style.width = `${Math.max(5, percentage)}%`;
+        document.getElementById('progress-text').textContent = `${answered}/${totalQuestions}`;
+    }
+
+    function submitExam() {
+        if (Object.keys(selectedAnswers).length < totalQuestions) {
+            if (!confirm('Bạn chưa trả lời hết các câu hỏi. Bạn có chắc muốn nộp bài?')) {
+                return;
+            }
+        }
+
+        clearInterval(timerInterval);
+
+        fetch('{{ url_for("main.submit_exam") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                answers: selectedAnswers,
+                duration: (timeLimitMinutes * 60) - timeLeft,
+                subject_id: "{{ subject_id }}" if "{{ subject_id }}" != "None" else null
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('exam-container').style.display = 'none';
+                    document.getElementById('result-container').style.display = 'block';
+                    document.getElementById('final-score').textContent = data.score;
+                    document.getElementById('final-percentage').textContent = `${data.percentage}%`;
+
+                    const totalUsedSeconds = (timeLimitMinutes * 60) - timeLeft;
+                    const minutes = Math.floor(totalUsedSeconds / 60);
+                    const seconds = totalUsedSeconds % 60;
+                    document.getElementById('final-time').textContent =
+                        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi nộp bài. Vui lòng thử lại.');
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        startTimer();
+        updateTimer();
+        updateProgress();
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' && currentQuestion > 1) {
+                prevQuestion();
+            } else if (e.key === 'ArrowRight' && currentQuestion < totalQuestions) {
+                nextQuestion();
+            } else if (e.key >= '1' && e.key <= '4' && currentQuestion <= totalQuestions) {
+                // Select option with number keys 1-4
+                const optionKey = String.fromCharCode(96 + parseInt(e.key)); // Convert 1->a, 2->b, etc.
+                const questionElement = document.getElementById(`question-${currentQuestion}`);
+                const optionElement = questionElement.querySelector(`.option-item:nth-child(${e.key})`);
+                if (optionElement) {
+                    const questionId = `q${questionElement.querySelector('input[type="radio"]').name.replace('question_', '')}`;
+                    selectOption(optionElement, questionId, optionKey);
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    .result-circle {
+        width: 200px;
+        height: 200px;
+        position: relative;
+    }
+
+    .circle-bg {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+</style>
+{% endblock %}

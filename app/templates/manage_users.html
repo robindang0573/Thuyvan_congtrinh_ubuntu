@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Quản Lý Người Dùng - Ôn Thi Thủy Văn{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-dark text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-people"></i> Quản Lý Người Dùng</h4>
+            <a href="{{ url_for('main.index') }}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Quay lại Trang chủ
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên đăng nhập</th>
+                        <th>Email</th>
+                        <th>Quyền hạn</th>
+                        <th>Ngày tham gia</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'secondary' }}">
+                                {{ user.role|upper }}
+                            </span>
+                        </td>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else 'N/A' }}</td>
+                        <td>
+                            {% if user._id|string != current_user.id|string %}
+                            <button class="btn btn-sm btn-{{ 'warning' if user.role == 'admin' else 'primary' }} me-1"
+                                onclick="toggleRole('{{ user._id }}', '{{ user.role }}')">
+                                <i class="bi bi-person-badge"></i> {{ 'Hạ quyền User' if user.role == 'admin' else 'Nâng
+                                Admin' }}
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('{{ user._id }}')">
+                                <i class="bi bi-trash"></i> Xóa
+                            </button>
+                            {% else %}
+                            <span class="text-muted small"><em>Đang là bạn</em></span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleRole(userId, currentRole) {
+        const newRole = currentRole === 'admin' ? 'user' : 'admin';
+        const confirmMsg = `Bạn có chắc chắn muốn ${newRole === 'admin' ? 'nâng' : 'hạ'} quyền của người dùng này?`;
+
+        if (confirm(confirmMsg)) {
+            fetch(`/api/users/${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ role: newRole })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + (data.error || 'Không thể cập nhật quyền'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi cập nhật quyền');
+                });
+        }
+    }
+
+    function deleteUser(userId) {
+        if (confirm('Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác.')) {
+            fetch(`/api/users/${userId}`, {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + (data.error || 'Không thể xóa người dùng'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi xóa người dùng');
+                });
+        }
+    }
+</script>
+{% endblock %}

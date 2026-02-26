@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Import Câu Hỏi - Ôn Thi Thủy Văn{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-success text-white">
+        <h4 class="mb-0"><i class="bi bi-upload"></i> Import Câu Hỏi từ File Word</h4>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <h5><i class="bi bi-info-circle"></i> Hướng dẫn</h5>
+            <p>Import câu hỏi từ file Word (.docx) với định dạng:</p>
+            <ul>
+                <li>Câu hỏi bắt đầu bằng số thứ tự (1., 2., hoặc Câu 1:, Câu 2:...)</li>
+                <li>Đáp án a), b), c), d)</li>
+                <li>Đáp án đúng: "Đáp án: a" hoặc "Answer: b"</li>
+            </ul>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="mt-4">
+            <div class="mb-4">
+                <label for="subjectSelect" class="form-label font-weight-bold">Chọn môn học</label>
+                <select class="form-select mb-3" id="subjectSelect" name="subject_id" required>
+                    <option value="">-- Chọn môn học --</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject._id }}">{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="file" class="form-label font-weight-bold">Chọn file Word (.docx)</label>
+                <input class="form-control form-control-lg" type="file" id="file" name="file" accept=".docx" required>
+                <div class="form-text">File phải tuân thủ đúng định dạng mẫu.</div>
+            </div>
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="bi bi-upload"></i> Import Câu Hỏi
+            </button>
+        </form>
+
+        <hr class="my-4">
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-file-earmark-text"></i> Ví dụ định dạng file</h5>
+                    </div>
+                    <div class="card-body bg-light">
+                        <pre class="mb-0">
+1. Lưu vực sông là gì?
+a) Diện tích đất đai xung quanh sông
+b) Phần đất mà nước mưa chảy về sông
+c) Dòng chảy của nước sông
+d) Độ sâu của lòng sông
+Đáp án: b
+
+2. Công thức tính lưu lượng Q = ?
+a) Q = V × A
+b) Q = V / A  
+c) Q = A / V
+d) Q = V + A
+Đáp án: a
+</pre>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-lightbulb"></i> Lưu ý</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li>Chỉ hỗ trợ file .docx (Word 2007+)</li>
+                            <li>Mỗi câu hỏi cần có 4 đáp án a, b, c, d</li>
+                            <li>Phải chỉ định đáp án đúng rõ ràng</li>
+                            <li>Câu hỏi trùng lặp sẽ được bỏ qua</li>
+                            <li>Kích thước file tối đa 16MB</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="{{ url_for('main.manage_questions') }}" class="btn btn-outline-primary">
+                <i class="bi bi-gear"></i> Quản lý câu hỏi
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

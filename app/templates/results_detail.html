@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Chi Tiết Kết Quả - Ôn Thi Thủy Văn{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> Chi Tiết Kết Quả</h4>
+            <a href="{{ url_for('main.results') }}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h1 class="text-primary">{{ result.score }}/{{ result.total_questions }}</h1>
+                        <p class="text-muted">Số câu đúng</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h1 class="text-success">{{ "%.1f"|format(result.percentage) }}%</h1>
+                        <p class="text-muted">Tỷ lệ đúng</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h1 class="text-info">{{ (result.duration_seconds // 60)|int }}:{{
+                            "%02d"|format(result.duration_seconds % 60) }}</h1>
+                        <p class="text-muted">Thời gian làm bài</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h1 class="text-secondary">{{ result.completed_at.strftime('%d/%m/%Y') }}</h1>
+                        <p class="text-muted">Ngày thi</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5 class="text-muted">Môn thi: <span class="text-primary">{{ result.subject_name|default('Thủy văn công
+                        trình') }}</span></h5>
+                <h5 class="text-muted">Thời gian nộp bài: <span class="text-dark">{{ result.completed_at.strftime('%H:%M
+                        %d/%m/%Y') }}</span></h5>
+            </div>
+        </div>
+
+        <h5 class="mb-3">Chi tiết từng câu hỏi:</h5>
+        <div class="accordion" id="questionsAccordion">
+            {% for answer in result.answers %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ loop.index }}">
+                    <button class="accordion-button {% if not answer.is_correct %}collapsed{% endif %}" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+                        <span class="me-3">
+                            <i
+                                class="bi bi-{{ 'check-circle-fill text-success' if answer.is_correct else 'x-circle-fill text-danger' }}"></i>
+                        </span>
+                        Câu {{ loop.index }}: {{ answer.question[:80] }}{% if answer.question|length > 80 %}...{% endif
+                        %}
+                    </button>
+                </h2>
+                <div id="collapse{{ loop.index }}"
+                    class="accordion-collapse collapse {% if not answer.is_correct %}show{% endif %}"
+                    data-bs-parent="#questionsAccordion">
+                    <div class="accordion-body">
+                        <p><strong>Câu hỏi:</strong> {{ answer.question }}</p>
+                        <div class="mb-3">
+                            <strong>Đáp án của bạn:</strong>
+                            <span class="badge bg-{{ 'success' if answer.is_correct else 'danger' }}">
+                                {{ answer.user_answer|upper }}
+                            </span>
+                            <p class="mt-1">{{ answer.options[answer.user_answer] }}</p>
+                        </div>
+                        {% if not answer.is_correct %}
+                        <div class="alert alert-info">
+                            <strong><i class="bi bi-lightbulb"></i> Đáp án đúng:</strong>
+                            <span class="badge bg-success">{{ answer.correct_answer|upper }}</span>
+                            <p class="mt-1">{{ answer.options[answer.correct_answer] }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Trang Chủ - Ôn Thi {% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="bi bi-house-door"></i> Chào mừng {{ user.username }}!</h4>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Hệ thống ôn thi </h5>
+                <p class="card-text">
+                    Chào mừng bạn đến với hệ thống ôn thi trắc nghiệm.
+                    Hệ thống giúp bạn ôn tập và kiểm tra kiến thức với các tính năng:
+                </p>
+                <ul>
+                    <li><i class="bi bi-check-circle text-success"></i> Ngân hàng câu hỏi phong phú (hiện có: {{
+                        total_questions }} câu)</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Thi thử với 20 câu hỏi ngẫu nhiên</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Theo dõi kết quả và tiến độ học tập</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Thống kê kết quả bằng biểu đồ trực quan</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Lưu lịch sử thi và xem lại chi tiết</li>
+                </ul>
+
+                <div class="mt-4">
+                    <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal"
+                        data-bs-target="#examSetupModal">
+                        <i class="bi bi-pencil-square"></i> Bắt đầu thi thử ngay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Setup Modal -->
+    <div class="modal fade" id="examSetupModal" tabindex="-1" aria-labelledby="examSetupModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="examSetupModalLabel"><i class="bi bi-gear-fill"></i> Thiết lập bài thi
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="examSetupForm" action="{{ url_for('main.exam') }}" method="GET">
+                        <div class="mb-3">
+                            <label for="subjectSelect" class="form-label font-weight-bold">Chọn Môn Học</label>
+                            <select class="form-select" id="subjectSelect" name="subject_id">
+                                <option value="" selected>Tất cả môn học (Tổng hợp)</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject._id }}">{{ subject.name }} ({{ subject.question_count }} câu)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="limit" class="form-label font-weight-bold">Số lượng câu hỏi</label>
+                            <select class="form-select" id="limit" name="limit">
+                                <option value="20" selected>20 câu (Mặc định)</option>
+                                <option value="10">10 câu</option>
+                                <option value="30">30 câu</option>
+                                <option value="50">50 câu</option>
+                                <option value="all">Tất cả ({{ total_questions }} câu)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="time" class="form-label font-weight-bold">Thời gian làm bài (phút)</label>
+                            <select class="form-select" id="time" name="time">
+                                <option value="20" selected>20 phút (Mặc định)</option>
+                                <option value="10">10 phút</option>
+                                <option value="15">15 phút</option>
+                                <option value="30">30 phút</option>
+                                <option value="45">45 phút</option>
+                                <option value="60">60 phút</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary"
+                        onclick="document.getElementById('examSetupForm').submit()">Bắt đầu thi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5><i class="bi bi-graph-up"></i> Thống kê chung</h5>
+            </div>
+            <div class="card-body">
+                {% if stats %}
+                <div class="stats-item">
+                    <h6 class="text-muted">Số lần thi</h6>
+                    <h3 class="text-primary">{{ stats.total_exams }}</h3>
+                </div>
+                <div class="stats-item mt-3">
+                    <h6 class="text-muted">Điểm trung bình</h6>
+                    <h3 class="text-success">{{ "%.1f"|format(stats.average_score) }}%</h3>
+                </div>
+                <div class="stats-item mt-3">
+                    <h6 class="text-muted">Điểm cao nhất</h6>
+                    <h3 class="text-warning">{{ "%.1f"|format(stats.best_score) }}%</h3>
+                </div>
+                <div class="stats-item mt-3">
+                    <h6 class="text-muted">Tổng thời gian ôn tập</h6>
+                    <h5 class="text-secondary">{{ (stats.total_time // 60)|int }} phút</h5>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-bar-chart text-muted" style="font-size: 3rem;"></i>
+                    <p class="mt-3">Chưa có dữ liệu thống kê. Hãy bắt đầu thi thử!</p>
+                    <a href="{{ url_for('main.exam') }}" class="btn btn-outline-primary">Bắt đầu ngay</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Subject specific stats -->
+        {% if subjects %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5><i class="bi bi-folder"></i> Môn học của bạn</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for subject in subjects %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ subject.name }}</strong>
+                            {% if subject.user_stats %}
+                            <br><small class="text-muted">ĐTB: <span class="text-success">{{
+                                    "%.1f"|format(subject.user_stats.average_score) }}%</span></small>
+                            {% endif %}
+                        </div>
+                        <span class="badge bg-primary rounded-pill">{{ subject.question_count }} câu</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card shadow mt-4">
+            <div class="card-header bg-success text-white">
+                <h5><i class="bi bi-lightbulb"></i> Mẹo ôn thi</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> Ôn tập đều đặn mỗi ngày</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> Xem lại các câu sai</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> Quản lý thời gian khi thi</li>
+                    <li><i class="bi bi-check-circle-fill text-success"></i> Theo dõi tiến độ qua biểu đồ</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

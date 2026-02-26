@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Quản Lý Môn Học{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-journal-bookmark"></i> Quản Lý Môn Học</h2>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+        <i class="bi bi-plus-circle"></i> Thêm Môn Học
+    </button>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên Môn Học</th>
+                        <th>Mô Tả</th>
+                        <th>Số Câu Hỏi</th>
+                        <th>Ngày Tạo</th>
+                        <th>Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject in subjects %}
+                    <tr>
+                        <td><strong>{{ subject.name }}</strong></td>
+                        <td>{{ subject.description }}</td>
+                        <td>
+                            <span class="badge bg-info rounded-pill">{{ subject.question_count }}</span>
+                        </td>
+                        <td>{{ subject.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-2"
+                                onclick="editSubject('{{ subject._id }}', '{{ subject.name }}', '{{ subject.description }}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                onclick="deleteSubject('{{ subject._id }}', '{{ subject.name }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+                            <p class="mt-2 text-muted">Chưa có môn học nào</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Subject Modal -->
+<div class="modal fade" id="addSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm Môn Học Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addSubjectForm">
+                    <div class="mb-3">
+                        <label for="subjectName" class="form-label">Tên môn học <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="subjectName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subjectDescription" class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="subjectDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddSubject()">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Subject Modal -->
+<div class="modal fade" id="editSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chỉnh Sửa Môn Học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editSubjectForm">
+                    <input type="hidden" id="editSubjectId">
+                    <div class="mb-3">
+                        <label for="editSubjectName" class="form-label">Tên môn học <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editSubjectName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSubjectDescription" class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="editSubjectDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditSubject()">Cập Nhật</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xóa Môn Học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa môn học <strong id="deleteSubjectName"></strong>?</p>
+                <p class="text-danger"><small>* Không thể xóa môn học nếu đã có câu hỏi.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteSubject()">Xóa</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let subjectToDelete = null;
+
+    function submitAddSubject() {
+        const name = document.getElementById('subjectName').value;
+        const description = document.getElementById('subjectDescription').value;
+
+        if (!name) {
+            alert('Vui lòng nhập tên môn học');
+            return;
+        }
+
+        fetch('/api/subjects', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, description })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + data.error);
+                }
+            })
+            .catch(error => alert('Lỗi: ' + error));
+    }
+
+    function editSubject(id, name, description) {
+        document.getElementById('editSubjectId').value = id;
+        document.getElementById('editSubjectName').value = name;
+        document.getElementById('editSubjectDescription').value = description;
+
+        new bootstrap.Modal(document.getElementById('editSubjectModal')).show();
+    }
+
+    function submitEditSubject() {
+        const id = document.getElementById('editSubjectId').value;
+        const name = document.getElementById('editSubjectName').value;
+        const description = document.getElementById('editSubjectDescription').value;
+
+        if (!name) {
+            alert('Vui lòng nhập tên môn học');
+            return;
+        }
+
+        fetch(`/api/subjects/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, description })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + data.error);
+                }
+            })
+            .catch(error => alert('Lỗi: ' + error));
+    }
+
+    function deleteSubject(id, name) {
+        subjectToDelete = id;
+        document.getElementById('deleteSubjectName').textContent = name;
+        new bootstrap.Modal(document.getElementById('deleteSubjectModal')).show();
+    }
+
+    function confirmDeleteSubject() {
+        if (!subjectToDelete) return;
+
+        fetch(`/api/subjects/${subjectToDelete}`, {
+            method: 'DELETE'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + data.error);
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteSubjectModal'));
+                    if (modal) modal.hide();
+                }
+            })
+            .catch(error => alert('Lỗi: ' + error));
+    }
+</script>
+{% endblock %}
